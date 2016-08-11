@@ -55,12 +55,12 @@ MongoDBReader通过Datax框架从MongoDB并行的读取数据，通过主控的J
 	                            {
 	                                "name": "frontcat_id",
 	                                "type": "Array",
-	                                "spliter": ""
+	                                "splitter": ""
 	                            },
 	                            {
 	                                "name": "categoryid",
 	                                "type": "Array",
-	                                "spliter": ""
+	                                "splitter": ""
 	                            },
 	                            {
 	                                "name": "gmt_create",
@@ -69,7 +69,7 @@ MongoDBReader通过Datax框架从MongoDB并行的读取数据，通过主控的J
 	                            {
 	                                "name": "taglist",
 	                                "type": "Array",
-	                                "spliter": " "
+	                                "splitter": " "
 	                            },
 	                            {
 	                                "name": "property",
