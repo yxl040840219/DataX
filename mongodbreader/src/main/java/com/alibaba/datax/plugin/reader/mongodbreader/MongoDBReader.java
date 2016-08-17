@@ -9,6 +9,7 @@ import com.alibaba.datax.plugin.reader.mongodbreader.util.MongoUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.mongodb.*;
@@ -120,7 +121,8 @@ public class MongoDBReader extends Reader {
                     Iterator columnItera = mongodbColumnMeta.iterator();
                     while (columnItera.hasNext()) {
                         JSONObject column = (JSONObject)columnItera.next();
-                        Object tempCol = item.get(column.getString(KeyConstant.COLUMN_NAME));
+                        String columnName = column.getString(KeyConstant.COLUMN_NAME);
+                        Object tempCol = this.extractNestedItem(item, columnName);
                         if (tempCol == null) {
                             record.addColumn(null);
                         } else if (tempCol instanceof Double) {
@@ -177,6 +179,28 @@ public class MongoDBReader extends Reader {
         @Override
         public void destroy() {
 
+        }
+
+        private Object extractNestedItem(Document item, String columnName) {
+            Object tempCol = item;
+            String[] columns = columnName.split("\\.");
+
+            for (String name : columns) {
+                if (tempCol == null) {
+                    break;
+                }
+
+                if (StringUtils.isNumeric(name) && tempCol instanceof ArrayList) {
+                    Integer index = Integer.valueOf(name);
+                    tempCol = ((ArrayList)tempCol).get(index);
+                } else if (tempCol instanceof Document) {
+                    tempCol = ((Document)tempCol).get(name);
+                } else {
+                    tempCol = null;
+                }
+            }
+
+            return tempCol;
         }
     }
 }
