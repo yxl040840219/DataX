@@ -192,7 +192,11 @@ public class MongoDBReader extends Reader {
 
                 if (StringUtils.isNumeric(name) && tempCol instanceof ArrayList) {
                     Integer index = Integer.valueOf(name);
-                    tempCol = ((ArrayList)tempCol).get(index);
+                    if (((ArrayList)tempCol).size() > index) {
+                        tempCol = ((ArrayList)tempCol).get(index);
+                    } else {
+                        tempCol = null;
+                    }
                 } else if (tempCol instanceof Document) {
                     tempCol = ((Document)tempCol).get(name);
                 } else {
