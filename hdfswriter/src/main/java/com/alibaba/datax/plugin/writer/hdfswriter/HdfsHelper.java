@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public  class HdfsHelper {
     public static final Logger LOG = LoggerFactory.getLogger(HdfsWriter.Job.class);
@@ -443,69 +445,80 @@ public  class HdfsHelper {
         int recordLength = record.getColumnNumber();
         if (0 != recordLength) {
             Column column;
+            Pattern p = Pattern.compile("\t|\r|\n");
             for (int i = 0; i < recordLength; i++) {
                 column = record.getColumn(i);
-                //todo as method
-                if (null != column.getRawData()) {
-                    String rowData = column.getRawData().toString();
-                    SupportHiveDataType columnType = SupportHiveDataType.valueOf(
-                            columnsConfiguration.get(i).getString(Key.TYPE).toUpperCase());
-                    //根据writer端类型配置做类型转换
-                    try {
-                        switch (columnType) {
-                            case TINYINT:
-                                recordList.add(Byte.valueOf(rowData));
-                                break;
-                            case SMALLINT:
-                                recordList.add(Short.valueOf(rowData));
-                                break;
-                            case INT:
-                                recordList.add(Integer.valueOf(rowData));
-                                break;
-                            case BIGINT:
-                                recordList.add(column.asLong());
-                                break;
-                            case FLOAT:
-                                recordList.add(Float.valueOf(rowData));
-                                break;
-                            case DOUBLE:
-                                recordList.add(column.asDouble());
-                                break;
-                            case STRING:
-                            case VARCHAR:
-                            case CHAR:
-                                recordList.add(column.asString());
-                                break;
-                            case BOOLEAN:
-                                recordList.add(column.asBoolean());
-                                break;
-                            case DATE:
-                                recordList.add(new java.sql.Date(column.asDate().getTime()));
-                                break;
-                            case TIMESTAMP:
-                                recordList.add(new java.sql.Timestamp(column.asDate().getTime()));
-                                break;
-                            default:
-                                throw DataXException
-                                        .asDataXException(
-                                                HdfsWriterErrorCode.ILLEGAL_VALUE,
-                                                String.format(
-                                                        "您的配置文件中的列配置信息有误. 因为DataX 不支持数据库写入这种字段类型. 字段名:[%s], 字段类型:[%d]. 请修改表中该字段的类型或者不同步该字段.",
-                                                        columnsConfiguration.get(i).getString(Key.NAME),
-                                                        columnsConfiguration.get(i).getString(Key.TYPE)));
-                        }
-                    } catch (Exception e) {
-                        // warn: 此处认为脏数据
-                        String message = String.format(
-                                "字段类型转换错误：你目标字段为[%s]类型，实际字段值为[%s].",
-                                columnsConfiguration.get(i).getString(Key.TYPE), column.getRawData().toString());
-                        taskPluginCollector.collectDirtyRecord(record, message);
-                        transportResult.setRight(true);
-                        break;
-                    }
-                }else {
-                    // warn: it's all ok if nullFormat is null
+                if(column == null){
                     recordList.add(null);
+                }else{
+                    //todo as method
+                    if (null != column.getRawData()) {
+                        String rowData = column.getRawData().toString().trim();
+                        Matcher m = p.matcher(rowData);
+                        rowData = m.replaceAll(" ");
+                        SupportHiveDataType columnType = SupportHiveDataType.valueOf(
+                                columnsConfiguration.get(i).getString(Key.TYPE).toUpperCase());
+                        //根据writer端类型配置做类型转换
+                        try {
+                            switch (columnType) {
+                                case TINYINT:
+                                    recordList.add(Byte.valueOf(rowData));
+                                    break;
+                                case SMALLINT:
+                                    recordList.add(Short.valueOf(rowData));
+                                    break;
+                                case INT:
+                                    recordList.add(Integer.valueOf(rowData));
+                                    break;
+                                case BIGINT:
+                                    recordList.add(column.asLong());
+                                    break;
+                                case FLOAT:
+                                    recordList.add(Float.valueOf(rowData));
+                                    break;
+                                case DOUBLE:
+                                    recordList.add(column.asDouble());
+                                    break;
+                                case STRING:
+                                    recordList.add(rowData);
+                                    break ;
+                                case VARCHAR:
+                                    recordList.add(rowData);
+                                    break ;
+                                case CHAR:
+                                    recordList.add(rowData);
+                                    break;
+                                case BOOLEAN:
+                                    recordList.add(column.asBoolean());
+                                    break;
+                                case DATE:
+                                    recordList.add(new java.sql.Date(column.asDate().getTime()));
+                                    break;
+                                case TIMESTAMP:
+                                    recordList.add(new java.sql.Timestamp(column.asDate().getTime()));
+                                    break;
+                                default:
+                                    throw DataXException
+                                            .asDataXException(
+                                                    HdfsWriterErrorCode.ILLEGAL_VALUE,
+                                                    String.format(
+                                                            "您的配置文件中的列配置信息有误. 因为DataX 不支持数据库写入这种字段类型. 字段名:[%s], 字段类型:[%d]. 请修改表中该字段的类型或者不同步该字段.",
+                                                            columnsConfiguration.get(i).getString(Key.NAME),
+                                                            columnsConfiguration.get(i).getString(Key.TYPE)));
+                            }
+                        } catch (Exception e) {
+                            // warn: 此处认为脏数据
+                            String message = String.format(
+                                    "字段类型转换错误：你目标字段为[%s]类型，实际字段值为[%s].",
+                                    columnsConfiguration.get(i).getString(Key.TYPE), column.getRawData().toString());
+                            taskPluginCollector.collectDirtyRecord(record, message);
+                            transportResult.setRight(true);
+                            break;
+                        }
+                    }else {
+                        // warn: it's all ok if nullFormat is null
+                        recordList.add(null);
+                    }
                 }
             }
         }
