@@ -143,17 +143,27 @@ public class MongoDBReader extends Reader {
                                     throw DataXException.asDataXException(MongoDBReaderErrorCode.ILLEGAL_VALUE,
                                             MongoDBReaderErrorCode.ILLEGAL_VALUE.getDescription());
                                 } else {
-                                    ArrayList array = (ArrayList) tempCol;
-                                    ArrayList newArrayList = new ArrayList();
-                                    for(Object tmpArrayCol: array){
-                                        if(tmpArrayCol instanceof Document){
-                                            newArrayList.add(((Document) tmpArrayCol).toJson()) ;
+                                    if(tempCol instanceof ArrayList){
+                                        ArrayList array = (ArrayList) tempCol;
+                                        ArrayList newArrayList = new ArrayList();
+                                        for(Object tmpArrayCol: array){
+                                            if(tmpArrayCol != null){
+                                                if(tmpArrayCol instanceof Document){
+                                                    newArrayList.add(((Document) tmpArrayCol).toJson()) ;
+                                                }else{
+                                                    newArrayList.add(tmpArrayCol.toString()) ;
+                                                }
+                                            }
+                                        }
+                                        String tempArrayStr = Joiner.on(splitter).join(newArrayList);
+                                        record.addColumn(new StringColumn(tempArrayStr));
+                                    }else{
+                                        if(tempCol instanceof Document){
+                                            record.addColumn(new StringColumn(((Document) tempCol).toJson()));
                                         }else{
-                                            newArrayList.add(tmpArrayCol.toString()) ;
+                                            record.addColumn(new StringColumn(tempCol.toString()));
                                         }
                                     }
-                                    String tempArrayStr = Joiner.on(splitter).join(newArrayList);
-                                    record.addColumn(new StringColumn(tempArrayStr));
                                 }
                             } else {
                                 if (tempCol instanceof Document) { // 如果是 document 转换为 json

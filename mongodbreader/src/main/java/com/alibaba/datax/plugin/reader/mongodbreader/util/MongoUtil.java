@@ -22,7 +22,12 @@ public class MongoUtil {
             throw DataXException.asDataXException(MongoDBReaderErrorCode.ILLEGAL_VALUE,"不合法参数");
         }
         try {
-            return new MongoClient(parseServerAddress(addressList));
+            List<ServerAddress> addresses = parseServerAddress(addressList) ;
+            if(addresses.size() > 1) {
+                return new MongoClient(addresses);
+            }else{
+                return new MongoClient(addresses.get(0));
+            }
         } catch (UnknownHostException e) {
             throw DataXException.asDataXException(MongoDBReaderErrorCode.ILLEGAL_ADDRESS,"不合法的地址");
         } catch (NumberFormatException e) {
